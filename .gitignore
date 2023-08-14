@@ -2,3 +2,8 @@
 public/storage
 config/database.php
 .user.ini
+/.idea
+/.vscode
+/vendor
+*.log
+.env
