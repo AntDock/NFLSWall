@@ -1,0 +1,183 @@
+{include file="index/public/header"}
+
+<!-- 页体 -->
+<div id="jsParameter" jsPageHierarchy=1 jsTabClass="{if $cardsModel == 0}2{else}1{/if}" class="mdui-container">
+
+    <div class="mdui-row mdui-p-t-2">
+
+        <div class="mdui-col-md-6 mdui-col-offset-md-3">
+
+            <div class="mdui-p-b-2">
+                <button
+                    class="js-jumpurl-BackUp mdui-btn mdui-btn-block mdui-color-theme-accent mdui-ripple mdui-btn-raised">返
+                    回</button>
+            </div>
+
+            <div class="mdui-card mdui-m-b-1">
+                <!-- 卡片的内容 -->
+                <div class="mdui-p-y-2 mdui-p-x-2">
+                    墙墙严格保护你的隐私信息，无注册登录制度，自选填写公示。也希望我们互相尊重，请避免任何涉黄涉暴、敏感话题，也请不要人身攻击、传播谣言、冒名顶替，Wall-E 瓦力将会审核你的卡片。感谢信任和支持！<br> <br> 所有卡片的评论功能已经全量开放，欢迎发布互动交流类卡片哦～别忘记在各个同学交流群中找到并添加墙的微信（NFLSWall），查看朋友圈更新精选。<br> <br>发表卡片即代表你已经阅读并同意 NFLS Wall 的<a href="https://nflswall.com/terms/index.html">条款和政策</a>（点击链接阅读）。
+                </div>
+            </div>
+
+            <div class="mdui-card">
+                <!-- 卡片的内容 -->
+                <div class="mdui-p-t-2 mdui-p-x-2">
+                    <!-- 添加标签 -->
+                    <label class="mdui-textfield-label">选择一个话题标签？（必选，留空或内容不匹配可能会被修改）</label>
+                    <button id="btnChooseTagAdd" class="mdui-btn mdui-btn-icon mdui-ripple"
+                        mdui-dialog="{target: '#dialogChooseTag'}">
+                        <i class="mdui-icon material-icons">add</i>
+                    </button>
+                    <div class="mdui-dialog" id="dialogChooseTag">
+                        <div class="mdui-dialog-title">选择标签</div>
+                        <div class="mdui-dialog-content" style="color: unset; font-size: unset; line-height: unset;">
+                            <div class="mdui-row-xs-2 mdui-row-sm-4">
+                                {volist name="cardsTagData" id="data"}
+                                <div class="mdui-col">
+                                    <label class="mdui-checkbox">
+                                        <input type="checkbox" value="{$data.id}" name="inputChooseTag" />
+                                        <i class="mdui-checkbox-icon"></i>
+                                        {$data.name}
+                                    </label>
+                                </div>
+                                {/volist}
+                            </div>
+                        </div>
+
+                        <div class="mdui-dialog-actions">
+                            <button class="mdui-btn mdui-ripple" id="btnChooseTag" mdui-dialog-close>确定</button>
+                        </div>
+                    </div>
+
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">你的名字？（可不填）</label>
+                        <input class="mdui-textfield-input" id="woName" type="text" />
+                    </div>
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">你的联系方式？（可不填，填写后依然不公开，选择“墙墙帮我传话”标签可联系你牵线）</label>
+                        <input class="mdui-textfield-input" id="woContact" type="text" />
+                    </div>
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">你想与谁交流/表白？（必填，可写上名字/昵称/群体名称等）</label>
+                        <input class="mdui-textfield-input" id="taName" type="text" />
+                    </div>
+                    {if $cardsModel == 0}
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">表白写些什么？（必填）</label>
+                        <textarea class="mdui-textfield-input" id="content" rows="4" placeholder="表达你的爱意，语言得体、友善交流，切勿人身攻击、涉黄涉暴、论政敏感哦～"></textarea>
+                    </div>
+                    {else}
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">TA的联系方式？（可不填，填写后依然不公开，选择“墙墙帮我传话”标签可帮助联系TA）</label>
+                        <input class="mdui-textfield-input" id="taContact" type="text" />
+                    </div>
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">交流写些什么？（必填）</label>
+                        <textarea class="mdui-textfield-input" id="content" rows="4" placeholder="说说你想聊的，语言得体、友善交流，切勿人身攻击、涉黄涉暴、论政敏感哦～"></textarea>
+                    </div>
+                    {/if}
+
+                    <div class="mdui-textfield">
+                        <div id="listImageUrl" class="mdui-row-xs-2 mdui-row-sm-3">
+                            <!-- 图片容器 -->
+                        </div>
+                        <!-- 添加图片 -->
+                        <button class="mdui-btn mdui-btn-block mdui-text-color-theme-accent mdui-ripple"
+                            mdui-dialog="{target: '#dialogUploadImage'}">添加图片</button>
+                        <div class="mdui-dialog" id="dialogUploadImage">
+                            <div class="mdui-dialog-title">上传图片</div>
+                            <div class="mdui-dialog-content">
+                                <div class="mdui-row">
+                                    <div class="mdui-col-xs-12 mdui-col-sm-10">
+                                        <div class="mdui-textfield">
+                                            <input class="mdui-textfield-input" id="urlUpdataImage" type="text"
+                                                placeholder="http://">
+                                            <div class="mdui-textfield-helper">支持上传6M大小图片9张，部分格式目前不兼容加紧支持中</div>
+                                        </div>
+                                    </div>
+                                    <div class="mdui-col-xs-12 mdui-col-sm-2 mdui-text-center mdui-float-right">
+                                        <label id="btnUploadImage"
+                                            class="mdui-m-y-2 mdui-btn mdui-color-theme-accent mdui-btn-block">
+                                            <span>上传（点击后请稍等）</span>
+                                            <input id="dataUpdataImage" type="file" style="display: none;" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mdui-dialog-actions">
+                                <button class="mdui-btn mdui-ripple" id="btnUpdataImgUrl" mdui-dialog-close>添加</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div id="model" value="{$cardsModel}" class="mdui-card-actions">
+                    <button id="submitAdd"
+                        class="mdui-btn mdui-btn-raised mdui-color-theme-accent mdui-float-right">提交</button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{include file="index/public/footer"}
+<script src="{__A-assets__}/cardsEdit.js"></script>
+{if $configData.geetest.DefSetValidatesStatus == 1}
+<script src="https://static.geetest.com/v4/gt4.js"></script>
+<script src="{__A-assets__}/gt4/base.js"></script>
+{/if}
+<script>
+    $(function () {
+        //提交
+        const FunResultAdd = (CaptchaData) => {
+            //是否存在验证参数
+            var data;
+            if (CaptchaData) { data = CaptchaData; }
+
+            //构建图片url数组并获取
+            var jsonImageUrl = [];
+            $('#listImageUrl').find('.js-url-UpdataImage').each(function () {
+                jsonImageUrl.push($(this).attr('src'));
+            });
+            img = JSON.stringify(jsonImageUrl);
+            tag = JSON.stringify(checkChooseTagId);
+
+            data = {
+                ...data,//合并验证参数
+                'content': $('#content').val(),
+                'woName': $('#woName').val(),
+                'taName': $('#taName').val(),
+                'woContact': $('#woContact').val(),
+                'taContact': $('#taContact').val(),
+                'model': $('#model').attr('value'),
+                'tag': tag,
+                'img': img,
+            };
+            var result = apiAjax0a(data, apiUrlCardsAdd, 'POST');
+            if (result['r']['ec'] == 200) {
+                mdui.snackbar({
+                    message: '添加成功',
+                    position: 'left-top'
+                });
+                jumpUrl('/index/cards/card/id/' + result.r.data.id);
+                return;
+            } else if (result['r']['ec'] == 201) {
+                jumpUrl('/index');
+                return;
+            }
+        }
+        //验证
+        /*{if $configData.geetest.DefSetValidatesStatus == 1}*/
+        geetest4('#submitAdd', FunResultAdd, '{$configData.geetest.DefSetGeetestId}');
+        /*{else /}*/
+        $('#submitAdd').click(function () { FunResultAdd() });
+        /*{/if}*/
+    });
+</script>
+
+</body>
+
+</html>

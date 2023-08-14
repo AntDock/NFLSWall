@@ -1,0 +1,42 @@
+<div class="mdui-p-y-5"></div>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+<!-- <script src="{__A-assets__}/jquery-3.6.0/jquery.min.js"></script> -->
+<script>
+    /*
+    *初始化导航栏样式
+    */
+    jsTabClass = $('#jsParameter').attr('jsTabClass')
+    $('#jsTab' + jsTabClass + 'Class').attr('class', 'mdui-tab-active')
+</script>
+<script src="https://cdn.bootcdn.net/ajax/libs/mdui/1.0.2/js/mdui.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery_lazyload/1.9.7/jquery.lazyload.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/imageviewer/1.1.0/viewer.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/clipboard.js/2.0.6/clipboard.min.js"></script>
+<!-- <script src="{__A-assets__}/mdui-v1.0.2/js/mdui.min.js"></script>
+<script src="{__A-assets__}/jquery_lazyload-1.9.7/jquery.lazyload.js"></script>
+<script src="{__A-assets__}/jquery-cookie-1.4.1/jquery.cookie.min.js"></script>
+<script src="{__A-assets__}/viewer-jquery-1.1.0/viewer.min.js"></script>
+<script src="{__A-assets__}/clipboard-2.0.6/clipboard.min.js"></script> -->
+<script src="{$TemplateDirectory}/base.js"></script>
+<script src="{__A-assets__}/public.js"></script>
+
+<div align="center">
+<img class="css-footer-foundation" src="/favicon.ico" alt="NFLS Wall" />
+<p align="center" class="css-footer-foundation"> NFLS Wall Foundation 2022<script>new Date().getFullYear()>2015&&document.write("-"+new Date().getFullYear());</script>
+</p>
+<p align="center" class="css-footer"> 独立于南京外国语学校校方运作 </p>
+<p align="center" class="css-footer"> 不获取任何经济利益 </p>
+<br>
+<p align="center" class="css-footer"> 欢迎微信/QQ搜索 NFLSWall 加好友 </p>
+<br>
+<p align="center" class="css-footer"> 实用链接 </p>
+<p align="center" class="css-footer"> <a href="/terms/wall-wide-rules/index.html">条款公约</a> | <a href="/terms/privacy-policy/index.html">隐私政策</a> | <a href="mailto:report-fraud@nflswall.com">违法举报</a> </p>
+<br>
+</div>
+
+<div align="center" id="ip-address" class="css-footer"></div>
+
+<br>
+
+<script>  function getIPAddress() {    fetch("https://api.ipify.org?format=json")      .then(response => response.json())      .then(data => {        document.getElementById("ip-address").textContent = "230813.9 - " + data.ip;      })      .catch(error => {        console.log("Error:", error);      });  }  getIPAddress();</script>

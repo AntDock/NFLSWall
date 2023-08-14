@@ -1,0 +1,68 @@
+{include file="index/public/header"}
+
+<!-- 页体 -->
+<div id="jsParameter" jsPageHierarchy=0 jsTabClass="{if $cardsModel == 0}2{else}1{/if}" class="mdui-container">
+    <!-- 顶部按钮组件 -->
+    <div class="mdui-p-t-2">
+        {if $cardsModel == 0}
+        <button class="mdui-btn mdui-btn-block mdui-color-theme-accent mdui-ripple mdui-btn-raised"
+            onclick="location.assign('/index/cards/add/model/0')">发布表白卡</button>
+        {else}
+        <button class="mdui-btn mdui-btn-block mdui-color-theme-accent mdui-ripple mdui-btn-raised"
+            onclick="location.assign('/index/cards/add/model/1')">发布交流卡</button>
+        {/if}
+    </div>
+
+    <!-- 主体组件 -->
+    <div class="mdui-p-t-2">
+
+        <div class="mdui-row-xs-1 mdui-row-sm-2 mdui-row-md-3 mdui-row-lg-3">
+            <!-- 卡片循环 -->
+            {include file="index/public/component-list-cards"}
+            <!-- 分享弹窗 -->
+            {include file="index/public/component-share"}
+
+        </div>
+    </div>
+
+    <!-- 分页按钮组件 -->
+    <div class="mdui-p-t-2 mdui-text-center">
+        <div style="display: none;">{$cardsListRaw|raw}</div>
+        <button id="pageFirst" type="button" class="mdui-btn mdui-color-theme-accent">
+            <i class="mdui-icon material-icons ">first_page</i>
+        </button>
+        <button id="pageLast" type="button" class="mdui-btn mdui-color-theme-accent">
+            <i class="mdui-icon material-icons">last_page</i>
+        </button>
+    </div>
+
+</div>
+
+
+{include file="index/public/footer"}
+
+<script>
+    $(function () {
+        //初始化分页
+        pager();
+        //获取Tag数据
+        ViewCardsTag('{$cardsTagData|raw}');
+    })
+
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
+<script>
+    window.onload = function() {
+        var elem = document.querySelector('.mdui-row-xs-1, .mdui-row-sm-2, .mdui-row-md-3, .mdui-row-lg-3');
+        var msnry = new Masonry(elem, {
+            itemSelector: '.mdui-col',
+            columnWidth: '.mdui-col',
+            percentPosition: true
+        });
+    };
+</script>
+</body>
+
+</html>

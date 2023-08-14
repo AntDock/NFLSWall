@@ -1,0 +1,46 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Materialize CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+<!-- Showdown for markdown conversion -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+
+<meta charset="UTF-8">
+    
+<title>条款阅读 - NFLS Wall</title>
+
+</head>
+
+<body style="background-color: #617d8b; color: white; font-family: 'Roboto', sans-serif;">
+    <div class="container">
+        <!-- Content rendered from Markdown will be inserted here -->
+        <div id="content"></div>
+        <!-- Button -->
+        <div class="section">
+            <a class="btn waves-effect waves-light" style="background-color: #ff5252; color: white;" href="https://nflswall.com">浏览南孚拉斯墙面</a>
+            <a class="btn waves-effect waves-light" style="background-color: #ff5252; color: white;" href="mailto:privacy@nflswall.com">联系隐私服务</a>
+        </div>
+    </div>
+
+    <script>
+        // Fetch content.md and render
+        fetch('content.md')
+            .then(response => response.text())
+            .then(data => {
+                let converter = new showdown.Converter(),
+                    html = converter.makeHtml(data);
+                document.getElementById('content').innerHTML = html;
+            })
+            .catch(err => console.error(err));
+    </script>
+    
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+
+</html>
