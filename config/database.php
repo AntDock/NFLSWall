@@ -30,9 +30,9 @@ return [
             // 用户名
             'username'        => env('database.username', 'nflswall'),
             // 密码
-            'password'        => env('database.password', 'St6nWDnN6mayxaiC'),
+            'password'        => env('database.password', 'Your_DB_Password'),
             // 端口
-            'hostport'        => env('database.hostport', '3306'),
+            'hostport'        => env('database.hostport', 'Your_DB_Port'),
             // 数据库连接参数
             'params'          => [],
             // 数据库编码默认采用utf8
