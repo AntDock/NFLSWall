@@ -83,7 +83,7 @@
                     </blockquote>
                     {if $cardData['tag']}
                     <div class="mdui-p-x-2" id="CardDataTag">
-                        <div class="css-cards-primary-subtitle" value="{$cardData['tag']|raw}">
+                        <div class="css-cards-primary-subtitle" value={$cardData.tag|raw}>
                             <!-- Tag标签 -->
                         </div>
                     </div>
@@ -214,7 +214,7 @@
         //初始化-分页组件
         pager();
         //初始化-Tag组件
-//        ViewCardsTag('{$cardsTagData|raw}');
+        ViewCardsTag('{$cardsTagData|raw}');
         //viewer图片放大插件初始化
         $('#viewer').viewer({
             url: 'src'
