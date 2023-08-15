@@ -1,5 +1,8 @@
 {include file="index/public/header"}
 
+<!-- 引入 Masonry.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
+
 <!-- 页体 -->
 <div id="jsParameter" jsPageHierarchy=1 jsTabClass="3" class="mdui-container mdui-p-t-2">
 
@@ -15,12 +18,12 @@
     <!-- 主体组件 -->
     <div id="jsMainComp" class="mdui-m-t-2">
 
-        <div class="mdui-row-xs-1 mdui-row-sm-2 mdui-row-md-3 mdui-row-lg-3">
+        <!-- 使用 Masonry 的瀑布流布局 -->
+        <div class="masonry-grid mdui-row-xs-1 mdui-row-sm-2 mdui-row-md-3 mdui-row-lg-3">
             <!-- 卡片循环 -->
             {include file="index/public/component-list-cards"}
             <!-- 分享弹窗 -->
             {include file="index/public/component-share"}
-
         </div>
     </div>
 
@@ -38,6 +41,14 @@
         if (getUrlParam('value')) {
             $('#SearchValue').html('')
         }
+
+        // 初始化 Masonry.js
+        var elem = document.querySelector('.masonry-grid');
+        var msnry = new Masonry(elem, {
+            itemSelector: '.masonry-item',
+            columnWidth: '.masonry-item',
+            percentPosition: true
+        });
     });
 
     //表单-按钮-搜索
@@ -47,5 +58,4 @@
 </script>
 
 </body>
-
 </html>
