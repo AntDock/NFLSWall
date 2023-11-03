@@ -73,22 +73,31 @@ class Common extends Facade
      */
     protected static function mStringGetIP($type = 0): string
     {
-        $type       =  $type ? 1 : 0;
-        static $ip  =   NULL;
-        if ($ip !== NULL) return $ip[$type];
-        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $arr    =   explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $pos    =   array_search('unknown', $arr);
-            if (false !== $pos) unset($arr[$pos]);
-            $ip     =   trim($arr[0]);
-        } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip     =   $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-            $ip     =   $_SERVER['REMOTE_ADDR'];
-        }
-        // IP地址合法验证
-        $long = ip2long($ip);
-        $ip   = $long ? array($ip, $long) : array('0.0.0.0', 0);
-        return $ip[$type];
+    $type       = $type ? 1 : 0;
+    static $ip  = NULL;
+    if ($ip !== NULL) return $ip[$type];
+
+    // 优先获取 Cloudflare 的 TRUE-CLIENT-IP
+    if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+    } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $arr    = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $pos    = array_search('unknown', $arr);
+        if (false !== $pos) unset($arr[$pos]);
+        $ip     = trim($arr[0]);
+    } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
+        $ip     = $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (isset($_SERVER['REMOTE_ADDR'])) {
+        $ip     = $_SERVER['REMOTE_ADDR'];
     }
+
+    // IP地址合法验证
+    $binIp = inet_pton($ip);
+    if ($binIp === false) {
+        $ip = array('0.0.0.0', '0');
+    } else {
+        $ip = array(inet_ntop($binIp), bin2hex($binIp)); // 使用bin2hex是因为IPv6的表示方法很长，而需要一个简化的版本
+    }
+
+    return $ip[$type];
 }
