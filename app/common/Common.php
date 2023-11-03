@@ -101,3 +101,4 @@ class Common extends Facade
 
     return $ip[$type];
 }
+}
