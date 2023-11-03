@@ -2,34 +2,29 @@
 
 namespace app\admin\controller;
 
-//TP类
+use think\Request as TypeRequest;
 use think\facade\View;
 use think\facade\Db;
 
-//类
 use app\common\Common;
+use app\admin\BaseController;
 
-class Index
+class Index extends BaseController
 {
+    //中间件
+    protected $middleware = [\app\admin\middleware\AdminAuthCheck::class];
 
     //Index
-    public function index()
+    public function Index(TypeRequest $tDef_Request)
     {
-        //验证身份并返回数据
-        $userData = Common::validateViewAuth();
-        if ($userData[0] == false) {
-            //跳转返回消息
-            return Common::jumpUrl('/admin/login/index', '请先登入');
-        }
-
         //函数-取图表数据
-        function ChartData($key)
+        function fArrayGetChartData($key)
         {
             for ($i = 1; $i <= 6; $i++) {
                 $time = date('Y-m-d', strtotime('-' . $i . 'day'));
                 $arr[0][$i] = Db::table($key)->whereDay('time', $time)->count();
                 $arr[1][$i] = $time;
-                if($i==1)$arr[1][$i] = '昨日';
+                if ($i == 1) $arr[1][$i] = '昨日';
             }
             $arr[0] = Array_reverse($arr[0]);
             $arr[1] = Array_reverse($arr[1]);
@@ -37,24 +32,22 @@ class Index
         }
 
         //取总览数据
-        $dataNum = [
+        $tDef_ViewDataCount = [
             'cards' => Db::table('cards')->count(),
             'cardsComments' => Db::table('cards_comments')->count(),
             'good' => Db::table('good')->count()
         ];
         //取图表数据
-        $dataChart = [ChartData('cards'), ChartData('cards_comments'), ChartData('good')];
+        $tDef_ViewChartJson = [fArrayGetChartData('cards'), fArrayGetChartData('cards_comments'), fArrayGetChartData('good')];
         View::assign([
-            'dataNum' => $dataNum,
-            'dataChart' => json_encode($dataChart),
+            'ViewDataCount' => $tDef_ViewDataCount,
+            'ViewChartJson' => json_encode($tDef_ViewChartJson),
         ]);
 
         //基础变量
         View::assign([
-            'adminData'  => $userData[1],
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => '总览'
+            'AdminData'  => $tDef_Request->attrLDefNowAdminAllData,
+            'ViewTitle'  => '总览'
         ]);
 
         //输出模板

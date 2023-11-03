@@ -2,119 +2,81 @@
 
 namespace app\index\controller;
 
-//TP类
 use think\facade\View;
 use think\facade\Db;
 
-//类
 use app\common\Common;
+use app\common\Theme;
+use app\index\BaseController;
 
-class Index
+class Index extends BaseController
 {
-
-    //获取模板路径
-    var $TemplateDirectoryPath;
-    var $TemplateDirectory;
-    function __construct()
+    public function Index()
     {
-        //安装检测
-        @$file = fopen("../lock.txt", "r");
-        if (!$file) {
-            header("location:/system/install");
-            exit;
-        }
+        define("CONST_G_TOP_LISTS_MAX", 32); //置顶卡片列表最大个数
+        define("CONST_G_HOT_LISTS_MAX", 8); //热门卡片列表最大个数
 
-        $this->TemplateDirectoryPath = Common::get_templateDirectory()[0];
-        $this->TemplateDirectory = Common::get_templateDirectory()[1];
-    }
-
-    //输出
-    public function index()
-    {
-        //参数
-        $ip = Common::getIp();
-
-        //取Cards列表数据
-        $hotListNum = 32; //每页个数
-        $topListNum = 32; //每页个数
-
-        //取Cards.top数据
-        $result0 = Db::table('cards')->where('status', 0)->where('top', 1)->order('id', 'desc')
-            ->limit($topListNum)->select()->toArray();
-        $listData = $result0;
-        //取Cards推荐数据
+        //Cards置顶列表
+        $var_l_def_result = Db::table('cards')
+            ->where('status', 0)
+            ->where('top', 1)
+            ->order('id', 'desc')
+            ->limit(CONST_G_TOP_LISTS_MAX)
+            ->select()->toArray();
+        $var_l_def_cards_lists = $var_l_def_result;
+        //Cards推荐列表
         //$result = Db::table('cards')->where('status', 0)->where('top', 0)->order(['good','comment'=>'desc'])
-        //->limit($hotListNum)->select()->toArray();
-        
-        //正常高赞高评推荐逻辑
-        $result1 = Db::query("select * from cards where top = '0' and status = '0' order by IF(ISNULL(woName),1,0),comments*0.3+good*0.7 desc limit 40," . $hotListNum);
-        //合并到$listData数据
-        $listData = array_merge($listData, $result1);
-        
-        //新卡ID的曝光扶持
-        $result2 = Db::query("select * from cards where top = '0' and status = '0' order by IF(ISNULL(woName),1,0),id desc limit 40," . $hotListNum);
-        //合并到$listData数据
-        $listData = array_merge($listData, $result2);
-        
-        //浏览量低的曝光扶持
-        $result3 = Db::query("select * from cards where top = '0' and status = '0' order by IF(ISNULL(woName),1,0),look asc limit 40," . $hotListNum);
-        //合并到$listData数据
-        $listData = array_merge($listData, $result3);
-
-        //dd($listData);
-
-        //取标签数据
-        $result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
-        $cardsTagData = $result;
-        View::assign('cardsTagData', json_encode($cardsTagData));
-
-        //取Good状态合并到$listData数据
-        for ($i = 0; $i < sizeof($listData); $i++) {
-            $resultGood = Db::table('good')->where('aid', 1)->where('ip', $ip);
+        //->limit(CONST_G_HOT_LISTS_MAX)->select()->toArray();
+        $var_l_def_result = Db::query("select * from cards where top = '0' and status = '0' order by IF(ISNULL(woName),1,0),comments*0.3+good*0.7 desc limit 0," . CONST_G_HOT_LISTS_MAX);
+        //合并推荐列表到置顶列表
+        $var_l_def_cards_lists = array_merge($var_l_def_cards_lists, $var_l_def_result);
+        //取Good状态合并到CardsList数据
+        for ($i = 0; $i < sizeof($var_l_def_cards_lists); $i++) {
+            $var_l_def_result = Db::table('good')->where('aid', 1)->where('ip', $this->attrGReqIp);
             //查找对应封面
-            if ($resultGood->where('pid', $listData[$i]['id'])->findOrEmpty() == []) {
+            if ($var_l_def_result->where('pid', $var_l_def_cards_lists[$i]['id'])->findOrEmpty() == []) {
                 //未点赞
-                $listData[$i]['ipGood'] = false;
+                $var_l_def_cards_lists[$i]['ipGood'] = false;
             } else {
                 //已点赞
-                $listData[$i]['ipGood'] = true;
+                $var_l_def_cards_lists[$i]['ipGood'] = true;
             }
         }
 
-        //Cards分页变量;
+        //Tag列表
+        $var_l_def_result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
         View::assign([
-            'cardsListData'  => $listData,
+            'CardsTagsListJson' => json_encode($var_l_def_result),
+            'CardsTagsList' => $var_l_def_result
         ]);
+
+        //Cards列表;
+        View::assign('CardsList', $var_l_def_cards_lists);
 
         //基础变量
         View::assign([
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => '推荐',
-            'viewDescription' => false,
-            'viewKeywords' => false
+            'ViewTitle'  => '推荐',
         ]);
 
         //输出模板
-        return View::fetch($this->TemplateDirectoryPath . '/index');
+        return View::fetch('/index');
     }
 
-    public function error()
+    public function Error()
     {
         $code = request()->param('code');
-        //基础变量
-        View::assign([
-            'systemVer' => Common::systemVer(),
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'viewDescription' => false,
-            'viewKeywords' => false
-        ]);
+
+        //恢复view为系统配置
+        Theme::mObjectEasySetViewConfig('');
 
         //输出模板
         if ($code == 404) {
-            View::assign(['viewTitle'  => '页面走丢了']);
-            return View::fetch('../admin/error/404');
+            View::assign([
+                'ViewTitle'  => '页面走丢了',
+                'ViewKeywords' => '',
+                'ViewDescription' => ''
+            ]);
+            return View::fetch('../error/404');
         } else {
             return redirect('/');
         }

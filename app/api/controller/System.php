@@ -2,33 +2,28 @@
 
 namespace app\api\controller;
 
-//TP
 use think\facade\Request;
 use think\facade\Db;
 use think\facade\Config;
 
-//公共
-use app\Common\Common;
-use app\api\common\Common as ApiCommon;
+use app\common\File;
+use app\common\Export;
+use app\common\BackEnd;
+use app\common\Theme;
+use app\common\Common;
 
 class System
 {
-    //基本信息-POST
-    public function site()
-    {
-        //验证身份并返回数据
-        $userData = ApiCommon::validateAuth();
-        if (!empty($userData[0])) {
-            return Common::create([], $userData[1], $userData[0]);
-        }
-        //权限验证
-        if ($userData['power'] != 0) {
-            return Common::create(['power' => 1], '权限不足', 401);
-        }
 
+    //中间件
+    protected $middleware = [\app\api\middleware\AdminPowerCheck::class];
+
+    //基本信息-POST
+    public function Site()
+    {
         $siteUrl = Request::param('siteUrl');
         if (empty($siteUrl)) {
-            return Common::create([], '站点域名不得为空', 400);
+            return Export::mObjectEasyCreate([], '站点域名不得为空', 400);
         }
         $siteName = Request::param('siteName');
         $siteICPId = Request::param('siteICPId');
@@ -47,22 +42,12 @@ class System
         Db::table('system')->where('name', 'siteCopyright')->update(['value' => $siteCopyright]);
 
         //返回数据
-        return Common::create([], '更新成功', 200);
+        return Export::mObjectEasyCreate([], '更新成功', 200);
     }
 
     //邮箱配置-POST
-    public function email()
+    public function Email()
     {
-        //验证身份并返回数据
-        $userData = ApiCommon::validateAuth();
-        if (!empty($userData[0])) {
-            return Common::create([], $userData[1], $userData[0]);
-        }
-        //权限验证
-        if ($userData['power'] != 0) {
-            return Common::create(['power' => 1], '权限不足', 401);
-        }
-
         $LCEAPI = Request::param('LCEAPI');
         $smtpUser = Request::param('smtpUser');
         $smtpHost = Request::param('smtpHost');
@@ -81,55 +66,83 @@ class System
         Db::table('system')->where('name', 'smtpSecure')->update(['value' => $smtpSecure]);
 
         //返回数据
-        return Common::create([], '更新成功', 200);
+        return Export::mObjectEasyCreate([], '更新成功', 200);
     }
 
-    //模板配置-POST
-    public function template()
+    //主题设置-POST
+    public function Template()
     {
-        //验证身份并返回数据
-        $userData = ApiCommon::validateAuth();
-        if (!empty($userData[0])) {
-            return Common::create([], $userData[1], $userData[0]);
-        }
-        //权限验证
-        if ($userData['power'] != 0) {
-            return Common::create(['power' => 1], '权限不足', 401);
+        $tReq_ThemeDirectoryName = Request::param('themeDirectory');
+        $tReq_ThemeInfo = json_decode(File::read_file('./theme/' . $tReq_ThemeDirectoryName . '/info.ini'), true);
+        $tDef_LCVersionInfo = Common::mArrayGetLCVersionInfo();
+
+        if (!($tDef_LCVersionInfo['VerS'] >= $tReq_ThemeInfo['SysVersionL'] && $tDef_LCVersionInfo['VerS'] < $tReq_ThemeInfo['SysVersionR'])) {
+            return Export::mObjectEasyCreate([], '修改失败，该主题不适用当前版本', 400);
         }
 
-        $template_directory = Request::param('templateDirectory');
-        $result = ApiCommon::extraconfig('lovecards', ['template_directory' => $template_directory]);
+        $tDef_Result = BackEnd::mBoolCoverConfig('lovecards', ['theme_directory' => $tReq_ThemeDirectoryName]);
 
-        if ($result == true) {
-            return Common::create([], '修改成功', 200);
+        if ($tDef_Result == true) {
+            return Export::mObjectEasyCreate([], '修改成功', 200);
         } else {
-            return Common::create([], '修改失败，请重试', 400);
+            return Export::mObjectEasyCreate([], '修改失败，请重试', 400);
+        }
+    }
+
+    //主题配置-POST
+    public function TemplateSet()
+    {
+        $tDef_ThemeDirectory = Config::get('lovecards.theme_directory', 'index') ?: 'index';
+
+        $lReq_ParamSelect = json_decode(Request::param('select'));
+        $lReq_ParamText = json_decode(Request::param('text'));
+
+        $tDef_ThemeConfig = Theme::mResultGetThemeConfig($tDef_ThemeDirectory, true);
+
+        $lDef_ParamThemeConfig = [];
+        //校验元素是否合法
+        if (!empty($lReq_ParamSelect)) {
+            foreach ($lReq_ParamSelect as $key => $value) {
+                if (count($tDef_ThemeConfig['Select'][$key]['Element']) < $value) {
+                    return Export::mObjectEasyCreate([], '修改失败，Select存在非法元素', 400);
+                }
+                $lDef_ParamThemeConfig['Select' . $key] = $value;
+            }
+        }
+
+        //转义
+        if (!empty($lReq_ParamText)) {
+            foreach ($lReq_ParamText as $key => $value) {
+                if (empty($tDef_ThemeConfig['Text'][$key]['Name'])) {
+                    return Export::mObjectEasyCreate([], '修改失败，Text存在非法元素', 400);
+                }
+                $lDef_ParamThemeConfig['Text' . $key] = $value;
+            }
+        }
+
+        //更新
+        $tDef_Result = Theme::mBoolCoverThemeConfig($tDef_ThemeDirectory, $lDef_ParamThemeConfig);
+
+        if ($tDef_Result) {
+            return Export::mObjectEasyCreate([], '修改成功', 200);
+        } else {
+            return Export::mObjectEasyCreate([], '修改失败，请重试', 400);
         }
     }
 
     //极验验证码配置-POST
-    public function geetest()
+    public function Geetest()
     {
-        //验证身份并返回数据
-        $userData = ApiCommon::validateAuth();
-        if (!empty($userData[0])) {
-            return Common::create([], $userData[1], $userData[0]);
-        }
-        //权限验证
-        if ($userData['power'] != 0) {
-            return Common::create(['power' => 1], '权限不足', 401);
-        }
-
         try {
             $data = [
                 'DefSetGeetestId' => Request::param('DefSetGeetestId'),
                 'DefSetGeetestKey' => Request::param('DefSetGeetestKey'),
             ];
-            ApiCommon::extraconfig('lovecards', $data);
-            ApiCommon::extraconfig('lovecards', ['DefSetValidatesStatus' => Request::param('DefSetValidatesStatus')], true);
-            return Common::create([], '修改成功', 200);
+            BackEnd::mBoolCoverConfig('lovecards', $data);
+            BackEnd::mBoolCoverConfig('lovecards', ['DefSetValidatesStatus' => Request::param('DefSetValidatesStatus')], true);
+            return Export::mObjectEasyCreate([], '修改成功', 200);
         } catch (\Throwable $th) {
-            return Common::create([], '修改失败，请重试', 400);
+            return Export::mObjectEasyCreate([], '修改失败，请重试', 400);
         }
     }
 }

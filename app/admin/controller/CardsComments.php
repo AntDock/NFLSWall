@@ -2,39 +2,45 @@
 
 namespace app\admin\controller;
 
-//TP类
+use think\Request as TypeRequest;
 use think\facade\View;
 use think\facade\Db;
 
-//类
-use app\common\Common;
+use app\common\FrontEnd;
 
-class CardsComments
+use app\admin\BaseController;
+
+class CardsComments extends BaseController
 {
-    //Index
-    public function index()
-    {
-        //验证身份并返回数据
-        $userData = Common::validateViewAuth();
-        if ($userData[0] == false) {
-            return Common::jumpUrl('/admin/login/index', '请先登入');
-        }
 
+    //中间件
+    protected $middleware = [\app\admin\middleware\AdminAuthCheck::class];
+
+    //Index
+    public function Index(TypeRequest $tDef_Request)
+    {
         //获取列表
-        $listNum = 12; //每页个数
-        $list = Db::table('cards_comments')
-            ->order('id', 'desc')
-            ->paginate($listNum, true);
+        $tDef_CardsCommentsListMax = 12; //每页个数
+        $lDef_Result = Db::table('cards_comments')
+            ->order('cid', 'desc')
+            ->paginate($tDef_CardsCommentsListMax, true);
+
+        $tDef_CardsCommentsListEasyPagingComponent = $lDef_Result->render();
+        $lDef_CardsCommentsList = $lDef_Result->items();
+
         View::assign([
-            'list'  => $list,
-            'listNum'  => $listNum
+            'CardsCommentsList'  => $lDef_CardsCommentsList,
+            'CardsCommentsListEasyPagingComponent'  => $tDef_CardsCommentsListEasyPagingComponent,
+            'CardsCommentsListMax'  => $tDef_CardsCommentsListMax
         ]);
+
+        //通用列表
+        FrontEnd::mObjectEasyAssignCommonNowList($lDef_CardsCommentsList, $tDef_CardsCommentsListEasyPagingComponent, $tDef_CardsCommentsListMax);
 
         //基础变量
         View::assign([
-            'adminData'  => $userData[1],
-            'systemVer' => Common::systemVer(),
-            'viewTitle'  => '评论管理'
+            'AdminData'  => $tDef_Request->attrLDefNowAdminAllData,
+            'ViewTitle'  => '评论管理'
         ]);
 
         //输出模板

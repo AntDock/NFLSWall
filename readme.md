@@ -5,7 +5,7 @@
   LoveCards
   <br>
 </h1>
-<h4 align="center">或许，它可以不只是表白墙.</h4>
+<h4 align="center">由你筑起的“领域” 众人皆可“倾心倾意”.</h4>
 
 <p align="center">
   <a href="https://github.com/zhiguai/LoveCards/releases">
@@ -16,13 +16,12 @@
 
 <p align="center">
   <a href="https://lovecards.cn">主页</a> •
-  <a href="http://test123.chizg.cn">演示站</a> •
+  <a href="https://forum.lovecards.cn">论坛</a> •
   <a href="https://jq.qq.com/?_wv=1027&k=QTRjFYyB">QQ群组</a> •
   <a href="https://github.com/zhiguai/LoveCards/releases">下载</a>
 </p>
 
-<img src="https://img1.imgtp.com/2023/05/21/G50Prq3T.png">
-<img src="https://img1.imgtp.com/2023/05/21/YSPANS28.png">
+<img src="https://img1.imgtp.com/2023/09/18/UyB65ww3.png">
 
 ## 🌟 亮点
 
@@ -36,6 +35,21 @@
 👁️‍🗨️ 卡片浏览次数统计  
 🚀 发行版开箱即用  
 🌈 ... ...
+
+## 👀 部分图示
+
+#### 后台总览
+<img src="https://img1.imgtp.com/2023/09/18/wJOgnEV3.jpeg">  
+
+#### 外观设置
+<img src="https://img1.imgtp.com/2023/09/18/qKfUP3lO.jpeg">
+
+#### 默认主题配色展示
+<div style="display: flex; justify-content: space-between;">
+    <img src="https://img1.imgtp.com/2023/09/18/Bri5vAWy.jpeg" style="width: 30%;" alt="Image 1">
+    <img src="https://img1.imgtp.com/2023/09/18/oPHWRrKy.jpeg" style="width: 30%;" alt="Image 2">
+    <img src="https://img1.imgtp.com/2023/09/18/XDdW1sZu.jpeg" style="width: 30%;" alt="Image 3">
+</div>
 
 ## 🛠️ 部署
 
@@ -62,18 +76,16 @@ mysql
 
 ## ⚠️ 注意
 
-请及时关注该仓库或加入 QQ 交流群获取更新通知  
-如有安装问题请搜索“TP6 程序宝塔部署教程”或加入 QQ 交流群咨询（请先学会如何正确提问）  
-项目官网<a href="https://lovecards.cn">lovecards.cn</a>
+更新通知可通过关注该仓库、关注[LoveCards论坛](https://forum.lovecards.cn)、加入[QQ交流群](https://jq.qq.com/?_wv=1027&k=QTRjFYyB)及时获取  
+> 目前该项目仅有**一人**长期维护与更新(能力有限🥵)，如果你也是一位开发者，🥰非常欢迎你加入到LC的生态以及核心程序的开发中来
 
 ## 👨‍💻 开发者看过来
 
 #### 模板说明
 
--   LC2 模板存放目录“public\view\index\”,例如：默认模板路径“public\view\index\index”
--   目前 LC2 支持模板开发，具体开发文档暂未完成，可参考默认模板以及 ThinkTemplate 开发指南(注意：config.ini 不可少)
--   <a href="https://www.kancloud.cn/manual/think-template/1286403">ThinkTemplate 开发指南(LC2 模板开发语法指南)</a>
--   <a href="https://console-docs.apipost.cn/preview/ad83ecdb4f10e38b/e187796270055b7b">API 文档</a>(待完善)
+-   <a href="https://docs.lovecards.cn">LoveCards文档🪞</a>
+-   <a href="https://lovecards.github.io">LoveCards文档🐱</a>
+-   <a href="https://console-docs.apipost.cn/preview/ad83ecdb4f10e38b/e187796270055b7b">API 文档</a>(未完)
 
 #### 版本号说明  
 -   Ver为实际版本号，程序中的“版本检测”将优先或仅以Ver为准

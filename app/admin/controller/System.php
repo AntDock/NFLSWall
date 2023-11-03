@@ -2,42 +2,35 @@
 
 namespace app\admin\controller;
 
-//TP类
+use think\Request as TypeRequest;
 use think\facade\View;
 use think\facade\Db;
-
-//类
-use app\common\Common;
-use app\common\File;
 use think\facade\Config;
 
-class System
+use app\common\Common;
+use app\common\File;
+use app\common\FrontEnd;
+use app\common\Theme;
+
+use app\admin\BaseController;
+
+class System extends BaseController
 {
 
-    //Index
-    public function index()
-    {
-        //验证身份并返回数据
-        $userData = Common::validateViewAuth();
-        if ($userData[0] == false) {
-            //跳转返回消息
-            return Common::jumpUrl('/admin/login/index', '请先登入');
-        }
-        //验证权限
-        if ($userData[1]['power'] != 0) {
-            return Common::jumpUrl('/admin/index', '权限不足');
-        }
+    //中间件
+    protected $middleware = [\app\admin\middleware\AdminPowerCheck::class];
 
+    //Index
+    public function Index(TypeRequest $tDef_Request)
+    {
         //取系统数据
         $systemData = array_column(Db::table('system')->select()->toArray(), 'value', 'name');
         View::assign($systemData);
 
         //基础变量
         View::assign([
-            'adminData'  => $userData[1],
-            'configData' => Config::get('lovecards'),
-            'systemVer' => Common::systemVer(),
-            'viewTitle'  => '系统设置'
+            'AdminData'  => $tDef_Request->attrLDefNowAdminAllData,
+            'ViewTitle'  => '系统设置'
         ]);
 
         //输出模板
@@ -45,57 +38,78 @@ class System
     }
 
     //View
-    public function View()
+    public function View(TypeRequest $tDef_Request)
     {
-        //验证身份并返回数据
-        $userData = Common::validateViewAuth();
-        if ($userData[0] == false) {
-            //跳转返回消息
-            return Common::jumpUrl('/admin/login/index', '请先登入');
-        }
-        //验证权限
-        if ($userData[1]['power'] != 0) {
-            return Common::jumpUrl('/admin/index', '权限不足');
-        }
-
         //取系统数据
         $systemData = array_column(Db::table('system')->select()->toArray(), 'value', 'name');
         View::assign($systemData);
 
         //取模板config数据
-        $templateDirectory = File::get_dirs('./view/index')['dir'];
-        $testTemplateConfig = array();
-        for ($i = 2; $i < count($templateDirectory); $i++) {
-            if ($templateDirectory[$i] != '.' && $templateDirectory[$i] != '..') {
-                $t = './view/index/' . $templateDirectory[$i];
-                if (File::get_size($t) != 0) {
-                    $testTemplateConfig[$templateDirectory[$i]] = json_decode(File::read_file($t . '/config.ini'), true);
-                    $testTemplateConfig[$templateDirectory[$i]]['DirectoryName'] = $templateDirectory[$i];
-                }
+        $lDef_ThemeDirectoryList = File::get_dirs('./theme')['dir'];
+        sort($lDef_ThemeDirectoryList);
+        $lDef_ThemeConfigList = array();
+        for ($i = 2; $i < count($lDef_ThemeDirectoryList); $i++) {
+            $tDef_ThemeBasePath = './theme/' . $lDef_ThemeDirectoryList[$i];
+            if (File::get_size($tDef_ThemeBasePath) != 0) {
+                // 以目录名为键
+                // $lDef_ThemeConfigList[$lDef_ThemeDirectoryList[$i]] = json_decode(File::read_file($tDef_ThemeBasePath . '/info.ini'), true);
+                // $lDef_ThemeConfigList[$lDef_ThemeDirectoryList[$i]]['DirectoryName'] = $lDef_ThemeDirectoryList[$i];
+                // 无键
+                $lDef_ThemeConfigList[$i - 2] = json_decode(File::read_file($tDef_ThemeBasePath . '/info.ini'), true);
+                $lDef_ThemeConfigList[$i - 2]['DirectoryName'] = $lDef_ThemeDirectoryList[$i];
             }
         }
-        $templateConfig = array();
-        foreach ($testTemplateConfig as $value) {
-            array_push($templateConfig, $value);
-        }
 
-        $nowTemplateConfig = json_decode(File::read_file('./view/index/' . Config::get('lovecards.template_directory', 'index') . '/config.ini'), true);
-        if (!$nowTemplateConfig) {
-            $nowTemplateConfig = json_decode(File::read_file('./view/index/index/config.ini'), true);
+        $tDef_NowThemeDirectory = Theme::mArrayGetThemeDirectory()['N'];
+        $lDef_NowThemeInfo = json_decode(File::read_file('./theme/' . $tDef_NowThemeDirectory . '/info.ini'), true);
+        $lDef_NowThemeInfo['Config'] = Theme::mResultGetThemeConfig($tDef_NowThemeDirectory); //用来给前端判断主题是否可以配置
+
+        if (!$lDef_NowThemeInfo) {
+            $lDef_NowThemeInfo = json_decode(File::read_file('./theme/index/info.ini'), true);
         }
 
         //基础变量
         View::assign([
-            'adminData'  => $userData[1],
-            'systemVer' => Common::systemVer(),
-            'viewTitle'  => '外观设置',
+            'AdminData'  => $tDef_Request->attrLDefNowAdminAllData,
+            'ViewTitle'  => '外观设置',
             //模板配置列表
-            'templateConfig' => $templateConfig,
+            'ThemeConfig' =>  $lDef_ThemeConfigList,
             //当前模板配置
-            'nowTemplateConfig' => $nowTemplateConfig
+            'nowThemeInfo' => $lDef_NowThemeInfo
         ]);
 
         //输出模板
         return View::fetch('/system-view');
+    }
+
+    //View-Set
+    public function ViewSet(TypeRequest $tDef_Request)
+    {
+        //取系统数据
+        $systemData = array_column(Db::table('system')->select()->toArray(), 'value', 'name');
+        View::assign($systemData);
+
+        $tDef_NowThemeConfig = Theme::mResultGetThemeConfig(Theme::mArrayGetThemeDirectory()['N'], true);
+        if (!$tDef_NowThemeConfig) {
+            return FrontEnd::jumpUrl('/admin/system/view', '当前主题没有配置项');
+        }
+
+        //解码输出
+        if (!empty($tDef_NowThemeConfig['Text'])) {
+            foreach ($tDef_NowThemeConfig['Text'] as $key => $value) {
+                $tDef_NowThemeConfig['Text'][$key]['Default'] = urldecode($value['Default']);
+            }
+        }
+
+        //基础变量
+        View::assign([
+            'AdminData'  => $tDef_Request->attrLDefNowAdminAllData,
+            'ViewTitle'  => '主题设置',
+            //当前模板配置
+            'TemplateConfig' => $tDef_NowThemeConfig
+        ]);
+
+        //输出模板
+        return View::fetch('/system-view-set');
     }
 }

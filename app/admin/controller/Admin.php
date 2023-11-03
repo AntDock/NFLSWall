@@ -2,43 +2,42 @@
 
 namespace app\admin\controller;
 
-//TP类
+use think\Request as TypeRequest;
 use think\facade\View;
 use think\facade\Db;
 
-//类
-use app\common\Common;
+use app\common\FrontEnd;
 
-class Admin
+use app\admin\BaseController;
+
+class Admin extends BaseController
 {
-    //Index
-    public function index()
-    {
-        //验证身份并返回数据
-        $userData = Common::validateViewAuth();
-        if ($userData[0] == false) {
-            return Common::jumpUrl('/admin/login/index', '请先登入');
-        }
-        //验证权限
-        if ($userData[1]['power'] != 0) {
-            return Common::jumpUrl('/admin/index', '权限不足');
-        }
 
-        //获取列表
-        $listNum = 5;
-        $list = Db::table('admin')
-            ->paginate($listNum, true);
+    //中间件
+    protected $middleware = [\app\admin\middleware\AdminPowerCheck::class];
+
+    //Index
+    public function Index(TypeRequest $tDef_Request)
+    {
+        $tDef_AdminListMax = 5;
+        $lDef_Result = Db::table('admin')
+            ->paginate($tDef_AdminListMax, true);
+
+        $tDef_AdminListEasyPagingComponent = $lDef_Result->render();
+        $lDef_AdminList = $lDef_Result->items();
+
         View::assign([
-            'list'  => $list,
-            'listNum'  => $listNum
+            'AdminList'  => $lDef_AdminList,
+            'AdminListEasyPagingComponent'  => $tDef_AdminListEasyPagingComponent,
+            'AdminListMax'  => $tDef_AdminListMax
         ]);
+        //通用列表
+        FrontEnd::mObjectEasyAssignCommonNowList($lDef_AdminList, $tDef_AdminListEasyPagingComponent, $tDef_AdminListMax);
 
         //基础变量
         View::assign([
-            'adminData'  => $userData[1],
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => '账号管理'
+            'AdminData'  => $tDef_Request->attrLDefNowAdminAllData,
+            'ViewTitle'  => '账号管理'
         ]);
 
         //输出模板

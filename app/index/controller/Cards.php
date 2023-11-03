@@ -2,360 +2,260 @@
 
 namespace app\index\controller;
 
-//TP类
 use think\facade\View;
 use think\facade\Db;
 use think\facade\Request;
 use think\facade\Config;
 
-//类
-use app\common\Common;
+use app\common\BackEnd;
+use app\common\FrontEnd;
+use app\common\Theme;
+use app\index\BaseController;
 
-class Cards
+class Cards extends BaseController
 {
 
-    //获取模板路径
-    var $TemplateDirectoryPath;
-    var $TemplateDirectory;
-    function __construct()
-    {
-        $this->TemplateDirectoryPath = Common::get_templateDirectory()[0];
-        $this->TemplateDirectory = Common::get_templateDirectory()[1];
-    }
-
     //Index
-    public function index()
+    public function Index()
     {
-        //参数
-        $ip = Common::getIp();
-        $model = Request::param('model');
-        if ($model == 0) {
-            $model = 0;
+        $tReq_ParamModel = Request::param('model');
+        if ($tReq_ParamModel == 0) {
+            $tReq_ParamModel = 0;
         } else {
-            $model = 1;
+            $tReq_ParamModel = 1;
         }
-        View::assign('cardsModel', $model);
+        View::assign('CardsModel', $tReq_ParamModel);
 
         //取Cards列表数据
-        $listNum = 12; //每页个数
-        if ($model == 0) {
-            $result = Db::table('cards')->where('status', 0)->where('model', 0)->order('id', 'desc')
-                ->paginate($listNum, true);
-        } else {
-            $result = Db::table('cards')->where('status', 0)->where('model', 1)->order('id', 'desc')
-                ->paginate($listNum, true);
+        $tDef_CardsListMax = 12; //每页个数
+        $lDef_Result = Db::table('cards')->alias('CARD')
+            ->field(self::G_Def_DbCardsCommonField)
+            ->leftJoin('good GOOD', self::G_Def_DbCardsCommonJoin . "'$this->attrGReqIp'")
+            ->where('CARD.status', 0)
+            ->where('CARD.model', $tReq_ParamModel)
+            ->order('CARD.id', 'desc')
+            ->paginate($tDef_CardsListMax, true);
+        $tDef_CardsEasyPagingComponent = $lDef_Result->render();
+        $lDef_CardsList = $lDef_Result->items();
+        $this->mObjectEasyAssignCards($lDef_CardsList, $tDef_CardsEasyPagingComponent, $tDef_CardsListMax); //Cards相关变量
+
+        $this->mObjectEasyGetAndAssignCardsTags(); //获取并赋值CardsTag相关变量
+
+        //基础变量
+        View::assign([
+            'ViewTitle'  => '卡片墙',
+        ]);
+
+        //输出模板
+        return Theme::mObjectEasyViewFetch('/cards');
+    }
+
+    // 卡片详情
+    public function Card()
+    {
+        $tReq_ParamId = Request::param('id');
+
+        // 验证ID并获取 Cards 数据
+
+        $lDef_CardData = Db::table('cards')->alias('CARD')
+            ->field(self::G_Def_DbCardsCommonField)
+            ->leftJoin('good GOOD', self::G_Def_DbCardsCommonJoin . "'$this->attrGReqIp'")
+            ->where('CARD.id', $tReq_ParamId)
+            ->where('CARD.status', 0)
+            ->findOrEmpty();
+        if (!$lDef_CardData) {
+            return FrontEnd::mObjectEasyFrontEndJumpUrl('/index/Cards', '卡片ID不存在');
         }
 
-        $cardsListRaw = $result->render();
-        $listData = $result->items();
+        // 防止快速刷新网页增加浏览量
+        $tDef_PreventClicks = BackEnd::mRemindEasyDebounce('LastGetTimeCardID' . $tReq_ParamId, 60);
+        if ($tDef_PreventClicks[0] == true) {
+            // 获取 Cards 数据库对象
+            $lDef_ResultCards = Db::table('cards')->where('id', $tReq_ParamId);
+            // 更新视图字段
+            if (!$lDef_ResultCards->inc('look')->update()) {
+                //return Common::create(['cards.look' => 'cards.look更新失败'], '无效浏览', 400);
+            };
+            $lDef_CardData['look'] = $lDef_CardData['look'] + 1;
+        }
 
-        //取标签数据
-        $result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
-        $cardsTagData = $result;
-        View::assign('cardsTagData', json_encode($cardsTagData));
+        // 获取图片数据
+        $tDef_ImgData = Db::table('img')->where('aid', 1)->where('pid', $lDef_CardData['id'])->select()->toArray();
 
-        //取Good状态合并到$listData数据
-        for ($i = 0; $i < sizeof($listData); $i++) {
-            $resultGood = Db::table('good')->where('aid', 1)->where('ip', $ip);
-            //查找对应封面
-            if ($resultGood->where('pid', $listData[$i]['id'])->findOrEmpty() == []) {
-                //未点赞
-                $listData[$i]['ipGood'] = false;
-            } else {
-                //已点赞
-                $listData[$i]['ipGood'] = true;
+        // 获取 Tag 数据
+        $this->mObjectEasyGetAndAssignCardsTags();
+
+        // 获取评论列表
+        $tDef_CommentsListMax = 6; // 每页个数
+        $lDef_Result = Db::table('cards_comments')->where('cid', $tReq_ParamId)->where('status', 0)->order('id', 'desc')
+            ->paginate($tDef_CommentsListMax, true);
+        $tDef_CommentsListEasyPagingComponent = $lDef_Result->render();
+        $tDef_CommentsList = $lDef_Result->items();
+
+        // 评论列表变量
+        View::assign([
+            'CardCommentsListEasyPagingComponent' => $tDef_CommentsListEasyPagingComponent,
+            'CardCommentsList' => $tDef_CommentsList,
+            'CardCommentsListMax' => $tDef_CommentsListMax
+        ]);
+
+        // 卡片变量
+        View::assign([
+            'CardData' =>  $lDef_CardData,
+            'CardImgList' => $tDef_ImgData
+        ]);
+
+        if (!$lDef_CardData['woName']) {
+            $lDef_CardData['woName'] = '匿名';
+        }
+        // 基础变量
+        View::assign([
+            'ViewTitle' =>  $lDef_CardData['woName'] . '的卡片',
+            'ViewDescription' =>  $lDef_CardData['woName'] . '表白' .  $lDef_CardData['woName'] . '说' .  $lDef_CardData['content'],
+            'ViewKeywords' =>  $lDef_CardData['woName'] . ',' .  $lDef_CardData['taName'] . ',LoveCards,表白卡'
+        ]);
+
+        // 输出模板
+        return Theme::mObjectEasyViewFetch('/card');
+    }
+
+    // 添加卡片
+    public function Add()
+    {
+        $tReq_ParamModel = Request::param('model');
+        $tReq_ParamModel = $tReq_ParamModel == 0 ? 0 : 1;
+        View::assign('CardModel', $tReq_ParamModel);
+
+        // 取 Tag 数据
+        $lDef_Result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
+        $tDef_CardsTagData = $lDef_Result;
+        View::assign([
+            'CardsTagsListJson' => json_encode($tDef_CardsTagData),
+            'CardsTagsList' => $tDef_CardsTagData
+        ]);
+
+        // 基础变量
+        View::assign([
+            'ViewTitle' => '写卡',
+        ]);
+
+        // 输出模板
+        return Theme::mObjectEasyViewFetch('/cards-add');
+    }
+
+
+    // 卡片搜索
+    public function Search()
+    {
+        // 参数
+        $tReq_ParamSearchStatus = Request::param('search');
+        $tDef_ViewTitle = '搜索';
+
+        if ($tReq_ParamSearchStatus) {
+            // 参数
+            $tReq_ParamModel = Request::param('model');
+            $tReq_ParamSearchValue = Request::param('value');
+            $tDef_ViewTitle = $tReq_ParamSearchValue . '的搜索结果';
+
+            // 验证Value
+            if (!$tReq_ParamSearchValue) {
+                return FrontEnd::mObjectEasyFrontEndJumpUrl('/index/Cards/search', '请输入要搜索内容');
             }
+
+            if ($tReq_ParamModel != 'false') {
+                $tReq_ParamModel = $tReq_ParamModel == 1 ? 1 : 0;
+                $tDef_Result = Db::table('cards')->where('status', 0)->where('model', $tReq_ParamModel);
+            } else {
+                $tDef_Result = Db::table('cards')->where('status', 0);
+            }
+
+            // 取 Cards 列表
+            $tDef_CardsListMax = 12; // 每页个数
+            $tDef_Result = $tDef_Result->where('id|content|woName|taName', 'like', '%' . $tReq_ParamSearchValue . '%')->order('id', 'desc')
+                ->paginate($tDef_CardsListMax, true);
+            $tDef_CardsListEasyPagingComponent = $tDef_Result->render();
+            $lDef_CardsList = $tDef_Result->items();
+
+            // 组合 Good 状态到 $tListData 列表
+            foreach ($lDef_CardsList as &$card) {
+                $tResultGood = Db::table('good')->where('aid', 1)->where('ip', $this->attrGReqIp);
+                // 查找对应封面
+                if ($tResultGood->where('pid', $card['id'])->findOrEmpty() == []) {
+                    // 未点赞
+                    $card['ipGood'] = false;
+                } else {
+                    // 已点赞
+                    $card['ipGood'] = true;
+                }
+            }
+        } else {
+            // 定义为空
+            $tDef_CardsListEasyPagingComponent = [];
+            $lDef_CardsList = [];
+            $tDef_CardsListMax = [];
         }
+
+        // 取 Tag 数据
+        $lDef_Result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
+        View::assign([
+            'CardsTagsListJson' => json_encode($lDef_Result),
+            'CardsTagsList' => $lDef_Result
+        ]);
 
         //Cards分页变量;
         View::assign([
-            'cardsListRaw'  => $cardsListRaw,
-            'cardsListData'  => $listData,
-            'cardsListNum'  => $listNum
+            'CardsListEasyPagingComponent'  => $tDef_CardsListEasyPagingComponent,
+            'CardsList'  => $lDef_CardsList,
+            'CardsListMax'  => $tDef_CardsListMax
         ]);
-
-        //基础变量
+        // 基础变量
         View::assign([
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => '卡片墙',
-            'viewDescription' => false,
-            'viewKeywords' => false
+            'ViewTitle' => $tDef_ViewTitle,
         ]);
 
-        //输出模板
-        return View::fetch($this->TemplateDirectoryPath . '/cards');
+        // 输出模板
+        return Theme::mObjectEasyViewFetch('/cards-search');
     }
 
-    //卡片详情
-    public function card()
+    // TAG集合
+    public function Tag()
     {
-        //参数
-        $ip = Common::getIp();
-        $id = Request::param('id');
+        // 传入Tid
+        $tReq_TagIdValue = Request::param('value');
 
-        //验证ID取Cards数据
-        $result = Db::table('cards')->where('id', $id)->where('status', 0)->findOrEmpty();
-        if (!$result) {
-            return Common::jumpUrl('/index/Cards', '卡片ID不存在');
+        // 验证Value
+        if (!$tReq_TagIdValue) {
+            return FrontEnd::mObjectEasyFrontEndJumpUrl('/index/Cards/search', '请输入Tag');
         }
-        $cardData = $result;
-
-        //防止快速刷新网页增加浏览量
-        $preventClicks = Common::preventClicks('LastGetTimeCardID' . $id, 60);
-        if ($preventClicks[0] == true) {
-            //获取Cards数据库对象
-            $resultCards = Db::table('cards')->where('id', $id);
-            //更新视图字段
-            if (!$resultCards->inc('look')->update()) {
-                return Common::create(['cards.look' => 'cards.look更新失败'], '无效浏览', 400);
-            };
-            $cardData['look'] = $cardData['look'] + 1;
+        $tReq_TagId = Db::table('cards_tag')->where('id', $tReq_TagIdValue)->findOrEmpty();
+        if (!$tReq_TagId) {
+            return FrontEnd::mObjectEasyFrontEndJumpUrl('/index/Cards/search', 'Tag已被删除或不存在');
         }
 
-        //取img数据
-        $result = Db::table('img')->where('aid', 1)->where('pid', $cardData['id'])->select()->toArray();
-        $imgData = $result;
+        $tDef_ViewTitle = '关于' . $tReq_TagId['name'] . '的卡片合集';
 
-        //取Tag数据
-        $result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
-        $cardsTagData = $result;
-        View::assign('cardsTagData', json_encode($cardsTagData));
+        // 取 cards_tag_map 列表
+        $tDef_CardsListMax = 12; // 每页个数
+        $lDef_Result = Db::table('cards_tag_map')->alias('CTM')
+            ->join('cards CARD', 'CTM.cid = CARD.id')
+            ->field(self::G_Def_DbCardsCommonField)
+            ->leftJoin('good GOOD', self::G_Def_DbCardsCommonJoin . "'$this->attrGReqIp'")
+            ->where('CTM.tid', $tReq_TagIdValue)
+            ->order('CARD.id', 'desc')
+            ->paginate($tDef_CardsListMax, true);
+        $tDef_CardsListEasyPagingComponent = $lDef_Result->render();
+        $lDef_CardsList = $lDef_Result->items();
+        $this->mObjectEasyAssignCards($lDef_CardsList, $tDef_CardsListEasyPagingComponent, $tDef_CardsListMax); //赋值Cards相关变量
 
-        //获取评论列表
-        $listNum = 6; //每页个数
-        $result = Db::table('cards_comments')->where('cid', $id)->where('status', 0)->order('id', 'desc')
-            ->paginate($listNum, true);
-        $cardsCommentsListRaw = $result->render();
-        $listData = $result->items();
+        $this->mObjectEasyGetAndAssignCardsTags(); //获取并赋值CardsTag相关变量
 
-        //取Good状态合并到$cardData数据
-        if (Db::table('good')->where('aid', 1)->where('ip', $ip)->where('pid', $id)->findOrEmpty() == []) {
-            //未点赞
-            $cardData['ipGood'] = false;
-        } else {
-            //已点赞
-            $cardData['ipGood'] = true;
-        }
-
-        //评论列表变量
+        // 基础变量
         View::assign([
-            'cardsCommentsListRaw'  => $cardsCommentsListRaw,
-            'cardsCommentsListData'  => $listData,
-            'cardsCommentsListNum'  => $listNum
+            'ViewTitle' => $tDef_ViewTitle,
+            'ViewTagName' => $tReq_TagId['name']
         ]);
 
-        //卡片变量
-        View::assign([
-            'cardData' => $cardData,
-            'imgData' => $imgData,
-            'cardsModel' => $cardData['model']
-        ]);
-
-        if (!$cardData['woName']) $cardData['woName'] = '匿名';
-        //基础变量
-        View::assign([
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'configData' => config::get('lovecards.class'),
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => $cardData['woName'] . '的卡片',
-            'viewDescription' => $cardData['woName'] . '表白' . $cardData['woName'] . '说' . $cardData['content'],
-            'viewKeywords' => $cardData['woName'] . ',' . $cardData['taName'] . ',LoveCards,表白卡'
-        ]);
-
-        //输出模板
-        return View::fetch($this->TemplateDirectoryPath . '/card');
-    }
-
-    //添加卡片
-    public function add()
-    {
-        $model = Request::param('model');
-        if ($model == 0) {
-            $model = 0;
-        } else {
-            $model = 1;
-        }
-        View::assign('cardsModel', $model);
-
-        //取Tag数据
-        $result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
-        $cardsTagData = $result;
-        View::assign('cardsTagData', $cardsTagData);
-
-        //基础变量
-        View::assign([
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'configData' => config::get('lovecards.class'),
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => '写卡',
-            'viewDescription' => false,
-            'viewKeywords' => false
-        ]);
-
-        //输出模板
-        return View::fetch($this->TemplateDirectoryPath . '/cards-add');
-    }
-
-    //卡片搜索
-    public function search()
-    {
-
-        //参数
-        $ip = Common::getIp();
-        $search = Request::param('search');
-        $viewTitle = '搜索';
-
-        if ($search == true) {
-            //参数
-            $model = Request::param('model');
-            $value = Request::param('value');
-            $viewTitle = $value . '的搜索结果';
-
-            //验证Value
-            if (!$value) {
-                return Common::jumpUrl('/index/Cards/search', '请输入要搜索内容');
-            }
-
-            if ($model != 'false') {
-                if ($model == 1) {
-                    $whereData = 1;
-                } else {
-                    $whereData = 0;
-                }
-                $result = Db::table('cards')->where('status', 0)->where('model', $whereData);
-            } else {
-                $result = Db::table('cards')->where('status', 0);
-            }
-            //dd($result);
-            //取Cards列表
-            $listNum = 12; //每页个数
-            $result = $result->where('id|content|woName|taName', 'like', '%' . $value . '%')->order('id', 'desc')
-                ->paginate($listNum, true);
-            $cardsListRaw = $result->render();
-            $listData = $result->items();
-
-            //组合Good状态到$listData列表
-            for ($i = 0; $i < sizeof($listData); $i++) {
-                $resultGood = Db::table('good')->where('aid', 1)->where('ip', $ip);
-                //查找对应封面
-                if ($resultGood->where('pid', $listData[$i]['id'])->findOrEmpty() == []) {
-                    //未点赞
-                    $listData[$i]['ipGood'] = false;
-                } else {
-                    //已点赞
-                    $listData[$i]['ipGood'] = true;
-                }
-            }
-        } else {
-            //定义为空
-            $cardsListRaw = [];
-            $listData = [];
-            $listNum = [];
-        }
-
-        //取Tag数据
-        $result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
-        $cardsTagData = $result;
-        View::assign('cardsTagData', json_encode($cardsTagData));
-
-        //Cards分页变量
-        View::assign([
-            'cardsListRaw'  => $cardsListRaw,
-            'cardsListData'  => $listData,
-            'cardsListNum'  => $listNum
-        ]);
-
-        //基础变量
-        View::assign([
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => $viewTitle,
-            'viewDescription' => false,
-            'viewKeywords' => false
-        ]);
-
-        //输出模板
-        return View::fetch($this->TemplateDirectoryPath . '/cards-search');
-    }
-
-    //TAG集合
-    public function tag()
-    {
-
-        //参数
-        $ip = Common::getIp();
-        //传入Tid
-        $value = Request::param('value');
-
-        //验证Value
-        if (!$value) {
-            return Common::jumpUrl('/index/Cards/search', '请输入Tag');
-        }
-        $requestTag = Db::table('cards_tag')->where('id', $value)->findOrEmpty();
-        if (!$requestTag) {
-            return Common::jumpUrl('/index/Cards/search', 'Tag已被删除或不存在');
-        }
-
-        $viewTitle = '关于' . $requestTag['name'] . '的卡片合集';
-
-        //取cards_tag_map列表
-        $listNum = 12; //每页个数
-        $result = Db::table('cards_tag_map')
-            ->where('tid', $value)
-            ->order('id', 'desc')
-            ->paginate($listNum, true);
-        $cardsListRaw = $result->render();
-        $TaglistData = $result->items();
-        $listData = [];
-
-        //组合Good状态到$listData列表
-        for ($i = 0; $i < sizeof($TaglistData); $i++) {
-            //取Cards数据
-            $requestCards = Db::table('cards')->where('status', 0)->where('id', $TaglistData[$i]['cid'])->findOrEmpty();
-            if ($requestCards) {
-                $resultGood = Db::table('good')->where('aid', 1)->where('ip', $ip);
-                //查找对应封面
-                if ($resultGood->where('pid', $requestCards['id'])->findOrEmpty() == []) {
-                    //未点赞
-                    $requestCards['ipGood'] = false;
-                } else {
-                    //已点赞
-                    $requestCards['ipGood'] = true;
-                }
-                //插入最终列表数据
-                array_push($listData, $requestCards);
-            }
-        }
-
-        //取Tag数据
-        $result = Db::table('cards_tag')->where('status', 0)->select()->toArray();
-        $cardsTagData = $result;
-        View::assign('cardsTagData', json_encode($cardsTagData));
-
-        //Cards分页变量
-        View::assign([
-            'cardsListRaw'  => $cardsListRaw,
-            'cardsListData'  => $listData,
-            'cardsListNum'  => $listNum
-        ]);
-
-        //基础变量
-        View::assign([
-            'TemplateDirectory' => '/view/index/' . $this->TemplateDirectory . '/assets',
-            'systemVer' => Common::systemVer(),
-            'systemData' => Common::systemData(),
-            'viewTitle'  => $viewTitle,
-            'viewDescription' => false,
-            'viewKeywords' => false,
-            'searchValue'  => $requestTag['name']
-        ]);
-
-        //输出模板
-        return View::fetch($this->TemplateDirectoryPath . '/cards-tag');
+        // 输出模板
+        return Theme::mObjectEasyViewFetch('/cards-tag');
     }
 }
