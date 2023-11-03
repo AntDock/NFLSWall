@@ -1,5 +1,8 @@
 {include file="index/public/header"}
 
+<!-- 引入 Masonry.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
+
 <!-- 页体 -->
 <div id="jsParameter" jsPageHierarchy=0 jsTabClass="3" class="mdui-container mdui-p-t-2">
 
@@ -53,8 +56,6 @@
                         class="mdui-btn mdui-btn-icon mdui-color-theme-accent mdui-ripple mdui-m-t-2">
                         <i class="mdui-icon material-icons">search</i>
                     </button>
-                    <!-- <button type="button"
-                        class="mdui-m-y-2 mdui-btn mdui-btn-raised mdui-color-theme-accent">搜索</button> -->
                 </div>
             </div>
         </div>
@@ -62,16 +63,14 @@
 
     <!-- 主体组件 -->
     <div id="jsMainComp" class="mdui-m-t-2">
-
-        <div class="mdui-row-xs-1 mdui-row-sm-2 mdui-row-md-3 mdui-row-lg-3">
+        <!-- 使用 Masonry 的瀑布流布局 -->
+        <div class="masonry-grid mdui-row-xs-1 mdui-row-sm-2 mdui-row-md-3 mdui-row-lg-3">
             <!-- 卡片循环 -->
             {include file="index/public/component-list-cards"}
             <!-- 分享弹窗 -->
             {include file="index/public/component-share"}
-
         </div>
     </div>
-
 </div>
 
 {include file="index/public/footer"}
@@ -97,7 +96,6 @@
         if(getUrlParam('model') != 'false' && getUrlParam('search') == 'true'){
             var model = Number(getUrlParam('model'));
             $('#dialogFilterItemModel-'+model).prop("checked",true);
-            console.log(model);
             radioModel = model;
         }
 
@@ -107,14 +105,23 @@
             $('#dialogFilterItemModel-1').prop("checked",false);
             radioModel = 'false';
         })
-    });
 
-    //表单-按钮-搜索
-    $('#requestSearch').click(function () {
-        jumpUrl('/index/Cards/search?search=true&model=' + radioModel + '&value=' + $('#SearchValue').val(), 0);
-    });
+        // 初始化 Masonry.js
+        var elem = document.querySelector('.masonry-grid');
+        var msnry = new Masonry(elem, {
+            itemSelector: '.masonry-item’,
+columnWidth: ‘.masonry-item’,
+percentPosition: true
+});
+});
+
+//表单-按钮-搜索
+$('#requestSearch').click(function () {
+    jumpUrl('/index/Cards/search?search=true&model=' + radioModel + '&value=' + $('#SearchValue').val(), 0);
+});
+
 </script>
 
-</body>
 
+</body>
 </html>
